@@ -7,7 +7,7 @@
 #include <arrayfire.h>
 #include <khiva/statistics.h>
 #include <khiva_c/statistics.h>
-#include <khiva_c/util.h>
+#include <khiva_c/internal/util.h>
 
 void pearson_statistics(khiva_array *xss, khiva_array *yss, khiva_array *result, int *error_code, char *error_message) {
     try {
