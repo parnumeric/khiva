@@ -14,6 +14,12 @@
 namespace khiva {
 
 namespace statistics {
+
+/**
+ * TODO: dmitry Add docs
+ */
+KHIVAAPI af::array pearsonCorrelation(af::array xss, af::array yss);
+
 /**
  * @brief Returns the covariance matrix of the time series contained in tss.
  *

@@ -9,6 +9,22 @@
 #include <khiva_c/statistics.h>
 #include <khiva_c/util.h>
 
+void pearson_statistics(khiva_array *xss, khiva_array *yss, khiva_array *result, int *error_code, char *error_message) {
+    try {
+        af::array var_xss;
+        af::array var_yss;
+        check_and_retain_arrays(xss, yss, var_xss, var_yss);
+        // af::array var = af::array(*tss);
+        // af_retain_array(tss, var.get());
+        af_retain_array(result, khiva::statistics::pearsonCorrelation(var_xss, var_yss).get());
+        *error_code = 0;
+    } catch (const std::exception &e) {
+        fill_error("pearson_statistics", e.what(), error_message, error_code, 1);
+    } catch (...) {
+        fill_unknown("pearson_statistics", error_message, error_code, -1);
+    }
+}
+
 void covariance_statistics(khiva_array *tss, bool *unbiased, khiva_array *result, int *error_code,
                            char *error_message) {
     try {

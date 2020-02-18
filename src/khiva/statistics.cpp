@@ -7,6 +7,73 @@
 #include <khiva/features.h>
 #include <khiva/statistics.h>
 
+af::array khiva::statistics::pearsonCorrelation(af::array xss, af::array yss) {
+    int n = xss.dims(0);
+    // int xCol = xss.dims(1);
+    // int yCol = yss.dims(1);
+    // int numCol = std::min(xCol, yCol);
+    int numCol = xss.dims(1);  // xss.dims(1) == yss.dims(1)
+    // std::cout << "n;numCol = " << n << ";" << numCol << std::endl;
+
+    af::array result_arr = af::constant(0.0, numCol, numCol);
+    af::array result_col = af::constant(0.0, 1, numCol);
+    af::array result_c = af::constant(0.0, numCol, 1);
+    af::array X_arr = af::constant(0.0, n, numCol);
+    af::array xy = af::constant(0.0, n, numCol);
+    af::array xySum = af::constant(0.0, 1, numCol);
+    af::array xSq_arr = af::constant(0.0, n, numCol);
+    af::array xSqSum_arr = af::constant(0.0, 1, numCol);
+    af::array xSum_arr = af::constant(0.0, 1, numCol);
+    af::array xSum2_arr = af::constant(0.0, 1, numCol);
+
+    af::array xSum = af::sum(xss, 0);
+    af::array ySum = af::sum(yss, 0);
+    af::array xSum2 = xSum * xSum;
+    af::array ySum2 = ySum * ySum;
+    af::array xSq = xss * xss;
+    af::array ySq = yss * yss;
+    af::array xSqSum = af::sum(xSq, 0);
+    af::array ySqSum = af::sum(ySq, 0);
+    for (int i = 0; i < numCol; i++) {
+        result_arr = af::shift(result_arr, 1);
+        X_arr = af::shift(xss, 0, i);
+        xSq_arr = af::shift(xSq, 0, i);
+        xSqSum_arr = af::shift(xSqSum, 0, i);
+        xSum_arr = af::shift(xSum, 0, i);
+        xSum2_arr = af::shift(xSum2, 0, i);
+        xy = X_arr * yss;
+        xySum = af::sum(xy, 0);
+        result_col =
+            (n * xySum - xSum_arr * ySum) / (af::sqrt(n * xSqSum_arr - xSum2_arr) * af::sqrt(n * ySqSum - ySum2));
+        result_col = af::moddims(result_col, numCol, 1);
+        result_arr += af::diag(result_col, 0, false);
+    }
+    result_arr = af::shift(result_arr, 1);
+    // af_print(result_arr);
+
+    // af_print(t1);
+
+    // af_print(a_arr);
+    // af_print(b_arr);
+
+    // for (int i = 1; i <= t.dims(1); i++) {
+    //     b_arr = af::shift(a_arr, 0, -i);
+    //     af_print(b_arr);
+    //     gfor(af::seq jj, t.dims(1)) {
+    //         auto a_auto = a_arr(af::span, jj);
+    //         auto b_auto = b_arr(af::span, jj);
+    //         c_vec(jj) = af::corrcoef<float>(a_auto, b_auto);
+    //         // c_vec(jj) = af::max(b_arr(af::span, jj), 3);
+    //         std::cout << "i = " << i << std::endl;
+    //         af_print(a_auto);
+    //         af_print(b_auto);
+    //         af_print(c_vec);
+    //     }
+    // }
+
+    return result_arr;
+}
+
 af::array khiva::statistics::covariance(af::array tss, bool unbiased) {
     long n = static_cast<long>(tss.dims(0));
 
