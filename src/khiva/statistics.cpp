@@ -6,25 +6,35 @@
 
 #include <khiva/features.h>
 #include <khiva/statistics.h>
+// #include <iostream>
 
 af::array khiva::statistics::pearsonCorrelation(af::array xss, af::array yss) {
     int n = xss.dims(0);
-    // int xCol = xss.dims(1);
-    // int yCol = yss.dims(1);
+    int xCol = xss.dims(1);
+    int yCol = yss.dims(1);
+    int numCol;
     // int numCol = std::min(xCol, yCol);
-    int numCol = xss.dims(1);  // xss.dims(1) == yss.dims(1)
-    // std::cout << "n;numCol = " << n << ";" << numCol << std::endl;
+    if (xCol == yCol) {
+        numCol = xCol;
+    } else if (yCol == 1) {
+        numCol = xCol;
+        // std::cout << "n;numCol = " << n << ";" << numCol << std::endl;
+    } else {
+        throw std::invalid_argument(
+            "Other cases with different number of columns of 2 time series are not implemented yet.");
+    }
 
-    af::array result_arr = af::constant(0.0, numCol, numCol);
-    af::array result_col = af::constant(0.0, 1, numCol);
+    af::array result_arr = af::constant(0.0, xCol, yCol);
+    // af::array result_col = af::constant(0.0, 1, xCol);
     af::array result_c = af::constant(0.0, numCol, 1);
-    af::array X_arr = af::constant(0.0, n, numCol);
-    af::array xy = af::constant(0.0, n, numCol);
-    af::array xySum = af::constant(0.0, 1, numCol);
-    af::array xSq_arr = af::constant(0.0, n, numCol);
-    af::array xSqSum_arr = af::constant(0.0, 1, numCol);
-    af::array xSum_arr = af::constant(0.0, 1, numCol);
-    af::array xSum2_arr = af::constant(0.0, 1, numCol);
+
+    af::array X_arr = af::constant(0.0, n, xCol);
+    af::array xy = af::constant(0.0, n, xCol);
+    af::array xySum = af::constant(0.0, 1, xCol);
+    af::array xSq_arr = af::constant(0.0, n, xCol);
+    af::array xSqSum_arr = af::constant(0.0, 1, xCol);
+    af::array xSum_arr = af::constant(0.0, 1, xCol);
+    af::array xSum2_arr = af::constant(0.0, 1, xCol);
 
     af::array xSum = af::sum(xss, 0);
     af::array ySum = af::sum(yss, 0);
@@ -34,27 +44,71 @@ af::array khiva::statistics::pearsonCorrelation(af::array xss, af::array yss) {
     af::array ySq = yss * yss;
     af::array xSqSum = af::sum(xSq, 0);
     af::array ySqSum = af::sum(ySq, 0);
-    for (int i = 0; i < numCol; i++) {
+
+    af::array Y_arr = yss;
+    af::array ySum_arr = ySum;
+    af::array ySum2_arr = ySum2;
+    af::array ySqSum_arr = ySqSum;
+
+    if (yCol > 1) {
+        // gfor(af::seq ii, yCol) {
+        //     result_arr = af::shift(result_arr, ii);
+        //     X_arr = af::shift(xss, 0, ii);
+        //     xSq_arr = af::shift(xSq, 0, ii);
+        //     xSqSum_arr = af::shift(xSqSum, 0, ii);
+        //     xSum_arr = af::shift(xSum, 0, ii);
+        //     xSum2_arr = af::shift(xSum2, 0, ii);
+        //     xy = X_arr * Y_arr;
+        //     xySum = af::sum(xy, 0);
+        //     af::array result_col = (n * xySum - xSum_arr * ySum_arr) /
+        //                            (af::sqrt(n * xSqSum_arr - xSum2_arr) * af::sqrt(n * ySqSum_arr - ySum2_arr));
+        //     // af_print(result_col);
+        //     result_col = af::moddims(result_col, xCol, 1);
+        //     // af_print(result_col);
+        //     result_arr += af::diag(result_col, 0, false);
+        // }
+        for (int i = 0; i < yCol; i++) {
+            result_arr = af::shift(result_arr, 1);
+            X_arr = af::shift(xss, 0, i);
+            xSq_arr = af::shift(xSq, 0, i);
+            xSqSum_arr = af::shift(xSqSum, 0, i);
+            xSum_arr = af::shift(xSum, 0, i);
+            xSum2_arr = af::shift(xSum2, 0, i);
+            xy = X_arr * Y_arr;
+            xySum = af::sum(xy, 0);
+            af::array result_col = (n * xySum - xSum_arr * ySum_arr) /
+                                   (af::sqrt(n * xSqSum_arr - xSum2_arr) * af::sqrt(n * ySqSum_arr - ySum2_arr));
+            // af_print(result_col);
+            result_col = af::moddims(result_col, xCol, 1);
+            // af_print(result_col);
+            result_arr += af::diag(result_col, 0, false);
+        }
         result_arr = af::shift(result_arr, 1);
-        X_arr = af::shift(xss, 0, i);
-        xSq_arr = af::shift(xSq, 0, i);
-        xSqSum_arr = af::shift(xSqSum, 0, i);
-        xSum_arr = af::shift(xSum, 0, i);
-        xSum2_arr = af::shift(xSum2, 0, i);
-        xy = X_arr * yss;
+    } else {
+        Y_arr = af::tile(yss, 1, xCol);
+        ySum_arr = af::tile(ySum, 1, xCol);
+        ySum2_arr = af::tile(ySum2, 1, xCol);
+        ySqSum_arr = af::tile(ySqSum, 1, xCol);
+
+        X_arr = af::shift(xss, 0, 0);
+        xSq_arr = af::shift(xSq, 0, 0);
+        xSqSum_arr = af::shift(xSqSum, 0, 0);
+        xSum_arr = af::shift(xSum, 0, 0);
+        xSum2_arr = af::shift(xSum2, 0, 0);
+        // std::cout << "xCol = " << xCol << std::endl;
+        // std::cout << "yCol = " << yCol << std::endl;
+        // af_print(yss);
+        // af_print(Y_arr);
+        xy = X_arr * Y_arr;
         xySum = af::sum(xy, 0);
-        result_col =
-            (n * xySum - xSum_arr * ySum) / (af::sqrt(n * xSqSum_arr - xSum2_arr) * af::sqrt(n * ySqSum - ySum2));
-        result_col = af::moddims(result_col, numCol, 1);
-        result_arr += af::diag(result_col, 0, false);
+        af::array result_col = (n * xySum - xSum_arr * ySum_arr) /
+                               (af::sqrt(n * xSqSum_arr - xSum2_arr) * af::sqrt(n * ySqSum_arr - ySum2_arr));
+        // af_print(result_col);
+        result_col = af::moddims(result_col, xCol, 1);
+        // af_print(result_col);
+        result_arr = result_col;
     }
-    result_arr = af::shift(result_arr, 1);
     // af_print(result_arr);
-
-    // af_print(t1);
-
-    // af_print(a_arr);
-    // af_print(b_arr);
 
     // for (int i = 1; i <= t.dims(1); i++) {
     //     b_arr = af::shift(a_arr, 0, -i);

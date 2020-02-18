@@ -14,6 +14,12 @@ extern "C" {
 #endif
 
 /**
+ * TODO: dmitry Add docs
+ */
+KHIVA_C_API void pearson_statistics(khiva_array *xss, khiva_array *yss, khiva_array *result, int *error_code,
+                                    char *error_message);
+
+/**
  * @brief Returns the covariance matrix of the time series contained in tss.
  *
  * @param tss Expects an input array whose dimension zero is the length of the time series (all the same) and dimension
