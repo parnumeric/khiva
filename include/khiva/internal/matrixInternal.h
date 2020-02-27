@@ -186,6 +186,10 @@ KHIVAAPI LeftRightProfilePair scampLR(std::vector<double> &&ta, long m);
 KHIVAAPI void scampLR(af::array tss, long m, af::array &profileLeft, af::array &indexLeft, af::array &profileRight,
                       af::array &indexRight);
 
+KHIVAAPI void scampThresh(af::array tss, long m, double threshold, af::array &profile, af::array &index);
+
+KHIVAAPI void scampThresh(af::array ta, af::array tb, long m, double threshold, af::array &profile, af::array &index);
+
 }  // namespace internal
 }  // namespace matrix
 }  // namespace khiva

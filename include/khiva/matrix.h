@@ -199,6 +199,17 @@ KHIVAAPI void matrixProfileLR(af::array tss, long m, af::array &profileLeft, af:
  */
 KHIVAAPI void getChains(af::array tss, long m, af::array &chains);
 
+/**
+ * @brief TODO: dmitry
+ */
+KHIVAAPI void matrixProfileThresh(af::array tss, long m, double threshold, af::array &profile, af::array &index);
+
+/**
+ * @brief TODO: dmitry
+ */
+KHIVAAPI void matrixProfileThresh(af::array ta, af::array tb, long m, double threshold, af::array &profile,
+                                  af::array &index);
+
 }  // namespace matrix
 }  // namespace khiva
 

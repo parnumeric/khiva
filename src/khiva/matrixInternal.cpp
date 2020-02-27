@@ -72,15 +72,15 @@ void InitProfileMemory(SCAMP::SCAMPArgs &args) {
             }
             break;
         }
-        // case SCAMP::PROFILE_TYPE_SUM_THRESH: {
-        //    args.profile_a.data.emplace_back();
-        //    args.profile_a.data[0].double_value.resize(args.timeseries_a.size() - args.window + 1, 0);
-        //    if (args.has_b) {
-        //        args.profile_b.data.emplace_back();
-        //        args.profile_b.data[0].double_value.resize(args.timeseries_b.size() - args.window + 1, 0);
-        //    }
-        //    break;
-        //}
+        case SCAMP::PROFILE_TYPE_SUM_THRESH: {
+            args.profile_a.data.emplace_back();
+            args.profile_a.data[0].double_value.resize(args.timeseries_a.size() - args.window + 1, 0);
+            if (args.has_b) {
+                args.profile_b.data.emplace_back();
+                args.profile_b.data[0].double_value.resize(args.timeseries_b.size() - args.window + 1, 0);
+            }
+            break;
+        }
         default:
             break;
     }
@@ -173,6 +173,37 @@ MatrixProfilePair scamp(std::vector<double> &&ta, std::vector<double> &&tb, long
     args.has_b = true;
     args.timeseries_a = std::move(ta);
     args.timeseries_b = std::move(tb);
+    runScamp(args);
+    return getProfileOutput(args.profile_a, args.window);
+}
+
+MatrixProfilePair scampThresh(std::vector<double> &&tss, long m, double threshold) {
+    auto args = getDefaultArgs();
+    args.window = m;
+    args.has_b = false;
+    args.timeseries_a = std::move(tss);
+
+    args.distance_threshold = threshold;
+    args.profile_a.type = SCAMP::PROFILE_TYPE_SUM_THRESH;
+    args.profile_b.type = SCAMP::PROFILE_TYPE_SUM_THRESH;
+    args.precision_type = SCAMP::PRECISION_DOUBLE;
+    args.profile_type = SCAMP::PROFILE_TYPE_SUM_THRESH;
+    runScamp(args);
+    return getProfileOutput(args.profile_a, args.window);
+}
+
+MatrixProfilePair scampThresh(std::vector<double> &&ta, std::vector<double> &&tb, long m, double threshold) {
+    auto args = getDefaultArgs();
+    args.window = m;
+    args.has_b = true;
+    args.timeseries_a = std::move(ta);
+    args.timeseries_b = std::move(tb);
+
+    args.distance_threshold = threshold;
+    args.profile_a.type = SCAMP::PROFILE_TYPE_SUM_THRESH;
+    args.profile_b.type = SCAMP::PROFILE_TYPE_SUM_THRESH;
+    args.precision_type = SCAMP::PRECISION_DOUBLE;
+    args.profile_type = SCAMP::PROFILE_TYPE_SUM_THRESH;
     runScamp(args);
     return getProfileOutput(args.profile_a, args.window);
 }
@@ -455,6 +486,45 @@ void scamp(af::array ta, af::array tb, long m, af::array &profile, af::array &in
             auto vectA = khiva::vectorutil::get<double>(ta(af::span, taIdx));
             auto vectB = khiva::vectorutil::get<double>(tb(af::span, tbIdx));
             auto res = ::scamp(std::move(vectB), std::move(vectA), m);
+            profile(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<double>(res.first);
+            index(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<unsigned int>(res.second);
+        }
+    }
+}
+
+void scampThresh(af::array tss, long m, double threshold, af::array &profile, af::array &index) {
+    if (tss.dims(2) > 1 || tss.dims(3) > 1) {
+        throw std::invalid_argument("Dimension 2 o dimension 3 is bigger than 1");
+    }
+
+    profile = af::array(tss.dims(0) - m + 1, tss.dims(1), f64);
+    index = af::array(tss.dims(0) - m + 1, tss.dims(1), u32);
+
+    tss = tss.as(f64);
+    for (dim_t tssIdx = 0; tssIdx < tss.dims(1); ++tssIdx) {
+        auto vect = khiva::vectorutil::get<double>(tss(af::span, tssIdx));
+        auto res = ::scampThresh(std::move(vect), m, threshold);
+        profile(af::span, tssIdx) = khiva::vectorutil::createArray<double>(res.first);
+        index(af::span, tssIdx) = khiva::vectorutil::createArray<unsigned int>(res.second);
+    }
+}
+
+void scampThresh(af::array ta, af::array tb, long m, double threshold, af::array &profile, af::array &index) {
+    if (ta.dims(2) > 1 || ta.dims(3) > 1 || tb.dims(2) > 1 || tb.dims(3) > 1) {
+        throw std::invalid_argument("Dimension 2 o dimension 3 is bigger than 1");
+    }
+
+    profile = af::array(tb.dims(0) - m + 1, ta.dims(1), tb.dims(1), f64);
+    index = af::array(tb.dims(0) - m + 1, ta.dims(1), tb.dims(1), u32);
+
+    ta = ta.as(f64);
+    tb = tb.as(f64);
+
+    for (dim_t tbIdx = 0; tbIdx < tb.dims(1); ++tbIdx) {
+        for (dim_t taIdx = 0; taIdx < ta.dims(1); ++taIdx) {
+            auto vectA = khiva::vectorutil::get<double>(ta(af::span, taIdx));
+            auto vectB = khiva::vectorutil::get<double>(tb(af::span, tbIdx));
+            auto res = ::scampThresh(std::move(vectB), std::move(vectA), m, threshold);
             profile(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<double>(res.first);
             index(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<unsigned int>(res.second);
         }
