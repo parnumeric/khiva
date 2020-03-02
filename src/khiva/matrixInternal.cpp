@@ -129,6 +129,20 @@ MatrixProfilePair getProfileOutput(const SCAMP::Profile &p, uint64_t window) {
     return std::make_pair(std::move(distances), std::move(indexes));
 }
 
+SumCorrelationsVector getThreshProfileOutput(const SCAMP::Profile &p, uint64_t window) {
+    SumCorrelationsVector sumCorrelations;
+
+    const auto &arr = p.data[0].double_value;
+    sumCorrelations.resize(arr.size());
+
+    for (int i = 0; i < arr.size(); ++i) {
+        sumCorrelations[i] = arr[i];
+        // distances[i] = static_cast<double>(convertToEuclidean(e.floats[0], window));
+        // indexes[i] = (e.floats[0] < -1) ? -1 : e.ints[1];
+    }
+    return sumCorrelations;
+}
+
 void runScamp(SCAMP::SCAMPArgs &args) {
     std::vector<int> devices;
 #ifdef _HAS_CUDA_
@@ -177,7 +191,7 @@ MatrixProfilePair scamp(std::vector<double> &&ta, std::vector<double> &&tb, long
     return getProfileOutput(args.profile_a, args.window);
 }
 
-MatrixProfilePair scampThresh(std::vector<double> &&tss, long m, double threshold) {
+SumCorrelationsVector scampThresh(std::vector<double> &&tss, long m, double threshold) {
     auto args = getDefaultArgs();
     args.window = m;
     args.has_b = false;
@@ -189,10 +203,10 @@ MatrixProfilePair scampThresh(std::vector<double> &&tss, long m, double threshol
     args.precision_type = SCAMP::PRECISION_DOUBLE;
     args.profile_type = SCAMP::PROFILE_TYPE_SUM_THRESH;
     runScamp(args);
-    return getProfileOutput(args.profile_a, args.window);
+    return getThreshProfileOutput(args.profile_a, args.window);
 }
 
-MatrixProfilePair scampThresh(std::vector<double> &&ta, std::vector<double> &&tb, long m, double threshold) {
+SumCorrelationsVector scampThresh(std::vector<double> &&ta, std::vector<double> &&tb, long m, double threshold) {
     auto args = getDefaultArgs();
     args.window = m;
     args.has_b = true;
@@ -205,7 +219,7 @@ MatrixProfilePair scampThresh(std::vector<double> &&ta, std::vector<double> &&tb
     args.precision_type = SCAMP::PRECISION_DOUBLE;
     args.profile_type = SCAMP::PROFILE_TYPE_SUM_THRESH;
     runScamp(args);
-    return getProfileOutput(args.profile_a, args.window);
+    return getThreshProfileOutput(args.profile_a, args.window);
 }
 
 void sortChains(ChainVector &chains) {
@@ -492,30 +506,27 @@ void scamp(af::array ta, af::array tb, long m, af::array &profile, af::array &in
     }
 }
 
-void scampThresh(af::array tss, long m, double threshold, af::array &profile, af::array &index) {
+void scampThresh(af::array tss, long m, double threshold, af::array &sumCorrelation) {
     if (tss.dims(2) > 1 || tss.dims(3) > 1) {
         throw std::invalid_argument("Dimension 2 o dimension 3 is bigger than 1");
     }
 
-    profile = af::array(tss.dims(0) - m + 1, tss.dims(1), f64);
-    index = af::array(tss.dims(0) - m + 1, tss.dims(1), u32);
+    sumCorrelation = af::array(tss.dims(0) - m + 1, tss.dims(1), f64);
 
     tss = tss.as(f64);
     for (dim_t tssIdx = 0; tssIdx < tss.dims(1); ++tssIdx) {
         auto vect = khiva::vectorutil::get<double>(tss(af::span, tssIdx));
         auto res = ::scampThresh(std::move(vect), m, threshold);
-        profile(af::span, tssIdx) = khiva::vectorutil::createArray<double>(res.first);
-        index(af::span, tssIdx) = khiva::vectorutil::createArray<unsigned int>(res.second);
+        sumCorrelation(af::span, tssIdx) = khiva::vectorutil::createArray<double>(res);
     }
 }
 
-void scampThresh(af::array ta, af::array tb, long m, double threshold, af::array &profile, af::array &index) {
+void scampThresh(af::array ta, af::array tb, long m, double threshold, af::array &sumCorrelation) {
     if (ta.dims(2) > 1 || ta.dims(3) > 1 || tb.dims(2) > 1 || tb.dims(3) > 1) {
         throw std::invalid_argument("Dimension 2 o dimension 3 is bigger than 1");
     }
 
-    profile = af::array(tb.dims(0) - m + 1, ta.dims(1), tb.dims(1), f64);
-    index = af::array(tb.dims(0) - m + 1, ta.dims(1), tb.dims(1), u32);
+    sumCorrelation = af::array(tb.dims(0) - m + 1, ta.dims(1), tb.dims(1), f64);
 
     ta = ta.as(f64);
     tb = tb.as(f64);
@@ -525,8 +536,7 @@ void scampThresh(af::array ta, af::array tb, long m, double threshold, af::array
             auto vectA = khiva::vectorutil::get<double>(ta(af::span, taIdx));
             auto vectB = khiva::vectorutil::get<double>(tb(af::span, tbIdx));
             auto res = ::scampThresh(std::move(vectB), std::move(vectA), m, threshold);
-            profile(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<double>(res.first);
-            index(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<unsigned int>(res.second);
+            sumCorrelation(af::span, taIdx, tbIdx) = khiva::vectorutil::createArray<double>(res);
         }
     }
 }

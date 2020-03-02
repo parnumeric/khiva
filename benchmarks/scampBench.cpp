@@ -63,6 +63,53 @@ void MatrixProfile2(benchmark::State &state) {
 }
 
 template <af::Backend BE, int D>
+void MatrixProfileThresh(benchmark::State &state) {
+    af::setBackend(BE);
+    af::setDevice(D);
+
+    auto n = state.range(0);
+    auto m = state.range(1);
+    double threshold = 0.5;
+
+    auto tss = af::randu(n, f64);
+
+    af::array sumCorrelation;
+
+    af::sync();
+    while (state.KeepRunning()) {
+        khiva::matrix::matrixProfileThresh(tss, m, threshold, sumCorrelation);
+        sumCorrelation.eval();
+        af::sync();
+    }
+
+    addMemoryCounters(state);
+}
+
+template <af::Backend BE, int D>
+void MatrixProfileThresh2(benchmark::State &state) {
+    af::setBackend(BE);
+    af::setDevice(D);
+
+    auto n = state.range(0);
+    auto m = state.range(1);
+    double threshold = 0.5;
+
+    auto ta = af::randu(n, f64);
+    auto tb = af::randu(n, f64);
+
+    af::array sumCorrelation;
+
+    af::sync();
+    while (state.KeepRunning()) {
+        khiva::matrix::matrixProfileThresh(ta, tb, m, threshold, sumCorrelation);
+        sumCorrelation.eval();
+        af::sync();
+    }
+
+    addMemoryCounters(state);
+}
+
+template <af::Backend BE, int D>
 void MatrixProfileLR(benchmark::State &state) {
     af::setBackend(BE);
     af::setDevice(D);
@@ -110,6 +157,16 @@ void cpuBenchmarks() {
         ->Unit(benchmark::TimeUnit::kMicrosecond);
 
     BENCHMARK_TEMPLATE(MatrixProfileLR, af::Backend::AF_BACKEND_CPU, CPU_BENCHMARKING_DEVICE)
+        ->RangeMultiplier(2)
+        ->Ranges({{16 << 10, 128 << 10}, {16, 512}})
+        ->Unit(benchmark::TimeUnit::kMicrosecond);
+
+    BENCHMARK_TEMPLATE(MatrixProfileThresh, af::Backend::AF_BACKEND_CPU, CPU_BENCHMARKING_DEVICE)
+        ->RangeMultiplier(2)
+        ->Ranges({{16 << 10, 128 << 10}, {16, 512}})
+        ->Unit(benchmark::TimeUnit::kMicrosecond);
+
+    BENCHMARK_TEMPLATE(MatrixProfileThresh2, af::Backend::AF_BACKEND_CPU, CPU_BENCHMARKING_DEVICE)
         ->RangeMultiplier(2)
         ->Ranges({{16 << 10, 128 << 10}, {16, 512}})
         ->Unit(benchmark::TimeUnit::kMicrosecond);

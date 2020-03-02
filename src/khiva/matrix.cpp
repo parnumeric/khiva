@@ -114,12 +114,12 @@ void matrixProfileLR(af::array tss, long m, af::array &profileLeft, af::array &i
 
 void getChains(af::array tss, long m, af::array &chains) { internal::getChains(tss, m, chains); }
 
-void matrixProfileThresh(af::array tss, long m, double threshold, af::array &profile, af::array &index) {
-    internal::scampThresh(tss, m, threshold, profile, index);
+void matrixProfileThresh(af::array tss, long m, double threshold, af::array &sumCorrelation) {
+    internal::scampThresh(tss, m, threshold, sumCorrelation);
 }
 
-void matrixProfileThresh(af::array ta, af::array tb, long m, double threshold, af::array &profile, af::array &index) {
-    internal::scampThresh(ta, tb, m, threshold, profile, index);
+void matrixProfileThresh(af::array ta, af::array tb, long m, double threshold, af::array &sumCorrelation) {
+    internal::scampThresh(ta, tb, m, threshold, sumCorrelation);
 }
 
 }  // namespace matrix
