@@ -1,9 +1,5 @@
 ﻿{
-  "environments": [
-    {
-      "VCToolsVersion": "14.24"
-    }
-  ],
+  "environments": [ { "VCToolsVersion": "14.24" } ],
   "configurations": [
     {
       "name": "x64-Debug",
@@ -17,16 +13,17 @@
       "ctestCommandArgs": "",
       "variables": [
         {
-          "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "${env.VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-          "type": "STRING"
+          "name": "KHIVA_BUILD_DOCUMENTATION",
+          "value": "OFF",
+          "type": "BOOL"
         },
         {
           "name": "KHIVA_USE_CONAN",
           "value": "OFF",
           "type": "STRING"
         }
-      ]
+      ],
+      "cmakeToolchain": "C:/Users/Dmitry Nikolaenko/repositories/vcpkg/scripts/buildsystems/vcpkg.cmake"
     },
     {
       "name": "x64-Release",
@@ -40,16 +37,17 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "variables": [
         {
-          "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "${env.VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-          "type": "STRING"
+          "name": "KHIVA_BUILD_DOCUMENTATION",
+          "value": "OFF",
+          "type": "BOOL"
         },
         {
           "name": "KHIVA_USE_CONAN",
           "value": "OFF",
           "type": "STRING"
         }
-      ]
+      ],
+      "cmakeToolchain": "C:/Users/Dmitry Nikolaenko/repositories/vcpkg/scripts/buildsystems/vcpkg.cmake"
     }
   ]
 }
